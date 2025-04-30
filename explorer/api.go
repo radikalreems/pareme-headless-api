@@ -53,7 +53,7 @@ func startAPI(ctx context.Context, wg *sync.WaitGroup, db *leveldb.DB, addr stri
 
 		// Manually set CORS headers (fallback)
 		origin := r.Header.Get("Origin")
-		if origin == "http://localhost:5173" || origin == "https://pareme.org" {
+		if origin == "http://localhost:5173" || origin == "https://pareme.org" || origin == "https://pareme.sbs" {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
@@ -105,7 +105,7 @@ func startAPI(ctx context.Context, wg *sync.WaitGroup, db *leveldb.DB, addr stri
 
 	// Apply CORS middleware
 	corsHandler := handlers.CORS(
-		handlers.AllowedOrigins([]string{"'http://localhost:5173", "https://pareme.org"}),
+		handlers.AllowedOrigins([]string{"'http://localhost:5173", "https://pareme.org", "https://pareme.sbs"}),
 		handlers.AllowedMethods([]string{"GET", "OPTIONS"}),
 		handlers.AllowedHeaders([]string{"Content-Type"}),
 		handlers.OptionStatusCode(http.StatusOK),
@@ -123,10 +123,13 @@ func startAPI(ctx context.Context, wg *sync.WaitGroup, db *leveldb.DB, addr stri
 
 		common.PrintToLog("Starting API Server...")
 
-		// Start server
+		// Start server with TLS
 		go func() {
-			if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-				common.PrintToLog(fmt.Sprintf("HTTP server error: %v", err.Error()))
+			if err := srv.ListenAndServeTLS(
+				"/etc/letsencrypt/live/pareme.sbs/fullchain.pem",
+				"/etc/letsencrypt/live/pareme.sbs/privkey.pem",
+			); err != http.ErrServerClosed {
+				common.PrintToLog(fmt.Sprintf("HTTPS server error: %v", err.Error()))
 			}
 		}()
 
@@ -134,7 +137,7 @@ func startAPI(ctx context.Context, wg *sync.WaitGroup, db *leveldb.DB, addr stri
 
 		// Initiate graceful shutdown
 		if err := srv.Shutdown(context.Background()); err != nil {
-			common.PrintToLog(fmt.Sprintf("HTTP shutdown error: %v", err.Error()))
+			common.PrintToLog(fmt.Sprintf("HTTPS shutdown error: %v", err.Error()))
 		}
 	}()
 

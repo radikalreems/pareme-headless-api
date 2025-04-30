@@ -16,7 +16,7 @@ import (
 
 const (
 	dbPath  = "explorer/db"
-	apiAddr = "localhost:8000"
+	apiAddr = "localhost:443"
 )
 
 var (
