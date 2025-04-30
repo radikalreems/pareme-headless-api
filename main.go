@@ -8,9 +8,7 @@ import (
 	"pareme/common"
 	"pareme/explorer"
 	"pareme/inout"
-	"pareme/mine"
 	"pareme/network"
-	"pareme/ui"
 	"strings"
 	"sync"
 )
@@ -39,7 +37,7 @@ func main() {
 	}
 
 	// Chain is valid; start the block writer goroutine
-	newHeightsChan, err := inout.BlockWriter(ctx, &wg)
+	_, err = inout.BlockWriter(ctx, &wg)
 	if err != nil {
 		common.PrintToLog(fmt.Sprintf("Blockwriter failed: %v", err))
 		cancel()
@@ -60,16 +58,13 @@ func main() {
 		}
 	*/
 
-	// Start the miner manager with the current chain height
-	consoleMineChan := mine.MinerManager(ctx, &wg, newHeightsChan)
-
 	// Start the Stats manager
 	err = explorer.StatsManager(ctx, &wg)
 	if err != nil {
 		common.PrintToLog("Failed to start Stats Manager")
 	}
 
-	fmt.Println("Program running in headless mode. Type 'ui' to launch the GUI, or 'exit' to quit.")
+	fmt.Println("Program running. Type 'exit' to quit.")
 
 	reader := bufio.NewReader(os.Stdin)
 	for {
@@ -88,11 +83,7 @@ func main() {
 
 			input = strings.TrimSpace(input)
 
-			enteredUI := false
 			switch {
-			case input == "ui" && !enteredUI:
-				ui.RunUI(ctx, cancel, &wg, consoleMineChan)
-				enteredUI = true
 			case input == "exit":
 				cancel()
 				wg.Wait()
